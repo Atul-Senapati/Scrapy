@@ -12,3 +12,6 @@ venv/
 /output/
 /debug/
 **/.DS_Store
+
+amz.log
+.venv

@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Amazon Scraper</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f6f6f7; --card:#fff; --ink:#111214; --ink2:#52555c; --mute:#8a8e96; --line:#e7e8ea;
+  --accent:#ffc400; --accent-d:#f2b600; --accent-l:#fff5cc; --accent-ink:#1a1400; --accent-t:#9a6700;
+  --f:'Geist',system-ui,-apple-system,sans-serif; --cols:4;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{color-scheme:light}
+body{font:14px/1.5 var(--f);background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit;background:none;border:0;outline:none}
+button{cursor:pointer}
+a{color:inherit}
+
+/* top bar */
+.top{position:sticky;top:0;z-index:20;background:var(--card);border-bottom:1px solid var(--line)}
+.row{max-width:1320px;margin:0 auto;padding:0 24px;display:flex;align-items:center;gap:20px}
+.top .row{height:64px}
+.brand{font-weight:700;font-size:17px;letter-spacing:-.025em;cursor:pointer;display:flex;align-items:center;gap:10px;white-space:nowrap}
+.brand svg{width:34px;height:34px;flex:none}
+.brand span{display:flex;flex-direction:column;line-height:1.05}
+.brand small{font-size:10px;font-weight:500;color:var(--mute);letter-spacing:.12em;text-transform:uppercase;margin-top:2px}
+.search{flex:1;max-width:560px;position:relative}
+.search input{width:100%;height:40px;padding:0 14px 0 38px;border-radius:10px;background:var(--bg);border:1px solid transparent;transition:.12s}
+.search input:hover{border-color:var(--line)}
+.search input:focus{background:var(--card);border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-l)}
+.search svg{position:absolute;left:12px;top:11px;width:18px;height:18px;color:var(--mute)}
+.sug{position:absolute;top:46px;left:0;right:0;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:6px;display:none;box-shadow:0 10px 30px rgba(0,0,0,.08)}
+.sug.on{display:block}
+.sug div{padding:8px 10px;border-radius:8px;cursor:pointer;color:var(--ink2)}
+.sug div:hover,.sug div.hl{background:var(--bg);color:var(--ink)}
+.sp{flex:1}
+.tabs{display:flex;gap:2px}
+.tabs button{height:36px;padding:0 14px;border-radius:9px;color:var(--ink2);font-weight:500}
+.tabs button:hover{background:var(--bg);color:var(--ink)}
+.tabs button.on{background:var(--accent-l);color:var(--accent-ink);box-shadow:inset 0 -2px 0 var(--accent)}
+.mkt{height:36px;padding:0 10px;border:1px solid var(--line);border-radius:9px;cursor:pointer;font-weight:500;background:var(--card)}
+.mkt:hover{border-color:#cfd1d5}
+
+main{max-width:1320px;margin:0 auto;padding:26px 24px 50px;min-height:calc(100vh - 129px)}
+
+/* toolbar */
+.tb{display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+.tb h2{font-size:22px;font-weight:600;letter-spacing:-.02em}
+.tb .n{color:var(--mute);font-size:13px}
+.ctl{display:flex;align-items:center;gap:8px;color:var(--mute);font-size:13px}
+.sel{height:36px;padding:0 30px 0 12px;border:1px solid var(--line);border-radius:9px;background:var(--card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none' stroke='%238a8e96' stroke-width='1.6'%3E%3Cpath d='m1 1 4 4 4-4'/%3E%3C/svg%3E") no-repeat right 11px center;-webkit-appearance:none;appearance:none;color:var(--ink);cursor:pointer;font-weight:500}
+.sel:hover{border-color:#cfd1d5}
+.sel:focus{border-color:var(--accent)}
+.seg{display:flex;background:var(--card);border:1px solid var(--line);border-radius:9px;padding:2px}
+.seg button{height:30px;min-width:30px;padding:0 8px;border-radius:7px;color:var(--mute);font-weight:500;font-size:13px}
+.seg button.on{background:var(--ink);color:#fff}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+.chip{height:34px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink2);font-weight:500}
+.chip:hover{border-color:#cfd1d5;color:var(--ink)}
+.chip.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+
+/* grid */
+.grid{display:grid;grid-template-columns:repeat(var(--cols),1fr);gap:14px}
+.cell{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;cursor:pointer;display:flex;flex-direction:column;position:relative;transition:border-color .12s,transform .12s;min-width:0}
+.cell:hover{border-color:#d6d8dc;transform:translateY(-2px);box-shadow:0 8px 22px rgba(17,18,20,.07)}
+.cell .im{aspect-ratio:1;background:#fff;display:grid;place-items:center;padding:16px}
+.cell .im img{max-width:100%;max-height:100%;object-fit:contain}
+.cell .bd{padding:2px 14px 14px;display:flex;flex-direction:column;gap:6px;flex:1}
+.cell .t{font-size:13px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:36px}
+.pr{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-top:auto}
+.pr b{font-size:18px;font-weight:600;letter-spacing:-.02em}
+.pr s{color:var(--mute);font-size:12px}
+.pr em{font-style:normal;font-size:12px;font-weight:600;color:#c2410c}
+.meta{font-size:12px;color:var(--mute);display:flex;gap:8px;flex-wrap:wrap}
+.meta b{font-weight:600;color:var(--ink)}
+.tag{position:absolute;top:10px;left:10px;height:22px;padding:0 8px;display:flex;align-items:center;border-radius:6px;background:var(--accent);color:var(--accent-ink);font-size:11px;font-weight:600;z-index:1}
+.tag.dark{background:var(--ink);color:#fff}
+.rk{position:absolute;top:10px;left:10px;min-width:26px;height:22px;padding:0 7px;display:flex;align-items:center;justify-content:center;border-radius:6px;background:var(--ink);color:#fff;font-size:11px;font-weight:600;z-index:1}
+.grid[style*="--cols:6"] .bd{padding:0 10px 10px}
+.grid[style*="--cols:6"] .t{font-size:12px}
+.grid[style*="--cols:6"] .pr b{font-size:15px}
+.grid[style*="--cols:2"] .t{font-size:15px}
+.grid[style*="--cols:2"] .pr b{font-size:22px}
+
+.sk .im,.sk .l{background:#eeeff1}
+.sk .l{height:10px;margin:0 14px 10px;border-radius:5px;width:70%}
+.sk{pointer-events:none}
+.sk .im{animation:pulse 1.2s infinite alternate}
+@keyframes pulse{to{opacity:.55}}
+
+.pager{display:flex;justify-content:center;align-items:center;gap:14px;margin-top:28px;color:var(--mute)}
+.btn{height:38px;padding:0 18px;border-radius:9px;background:var(--card);border:1px solid var(--line);font-weight:500;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;color:var(--ink)}
+.btn:hover:not(:disabled){border-color:#c9ccd1}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.pri:hover{background:var(--accent-d);border-color:var(--accent-d)}
+.msg{padding:90px 0;text-align:center;color:var(--mute)}
+.msg h3{color:var(--ink);font-size:18px;font-weight:600;margin-bottom:4px}
+.msg .btn{margin-top:14px}
+
+.start{padding:64px 0 20px;text-align:center;max-width:720px;margin:0 auto}
+.start .lg{width:68px;height:68px;margin-bottom:22px;filter:drop-shadow(0 8px 16px rgba(255,196,0,.35))}
+.start h1{font-size:46px;line-height:1.05;font-weight:700;letter-spacing:-.045em;margin-bottom:14px}
+.start h1 mark{background:linear-gradient(transparent 62%,var(--accent) 62%);color:inherit;padding:0 2px}
+.start p{color:var(--ink2);font-size:16px;margin:0 auto 26px;max-width:520px}
+.start .big-s{display:flex;max-width:560px;margin:0 auto 18px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:6px;box-shadow:0 6px 24px rgba(17,18,20,.06)}
+.start .big-s:focus-within{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-l)}
+.start .big-s input{flex:1;height:44px;padding:0 14px;font-size:15px}
+.start .chips{justify-content:center;margin:0 0 44px}
+.feat{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;text-align:left}
+.feat button{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;text-align:left;transition:.12s}
+.feat button:hover{border-color:var(--accent);transform:translateY(-2px)}
+.feat b{display:block;font-size:15px;margin-bottom:3px}
+.feat span{color:var(--mute);font-size:13px}
+.feat i{display:grid;place-items:center;width:32px;height:32px;border-radius:9px;background:var(--accent-l);margin-bottom:12px;font-style:normal;font-weight:700}
+@media(max-width:720px){.feat{grid-template-columns:1fr}.start h1{font-size:32px}}
+
+/* product dialog */
+.scrim{position:fixed;inset:0;background:rgba(17,18,20,.45);z-index:40;display:none;align-items:flex-start;justify-content:center;overflow:auto;padding:4vh 16px}
+.scrim.on{display:flex}
+.dlg{background:var(--card);border-radius:18px;width:min(1040px,100%);position:relative;margin:auto 0}
+.dlg .x{position:absolute;top:14px;right:14px;width:34px;height:34px;border-radius:50%;background:var(--bg);font-size:18px;z-index:2;display:grid;place-items:center}
+.dlg .x:hover{background:var(--line)}
+.dg{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0}
+.gal{padding:28px;border-right:1px solid var(--line)}
+.gal .main{aspect-ratio:1;display:grid;place-items:center;padding:6px}
+.gal .main img{max-width:100%;max-height:100%;object-fit:contain}
+.gal .th{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.gal .th img{width:52px;height:52px;object-fit:contain;border:1px solid var(--line);border-radius:9px;padding:4px;cursor:pointer;opacity:.7}
+.gal .th img.on,.gal .th img:hover{opacity:1;border-color:var(--accent)}
+.inf{padding:32px 32px 32px;display:flex;flex-direction:column;gap:18px;min-width:0}
+.inf .br{color:var(--accent-t);font-weight:600;font-size:13px}
+.inf h2{font-size:21px;line-height:1.3;font-weight:600;letter-spacing:-.02em;padding-right:30px}
+.big{font-size:32px;font-weight:700;letter-spacing:-.03em}
+.big + s{color:var(--mute);margin-left:10px}
+.big + s + em,.pr-l em{font-style:normal;color:#c2410c;font-weight:600;margin-left:8px}
+.facts{display:grid;gap:0;font-size:13px}
+.facts div{display:flex;justify-content:space-between;gap:16px;padding:9px 0;border-top:1px solid var(--line)}
+.facts span:first-child{color:var(--mute)}
+.facts span:last-child{text-align:right;font-weight:500}
+.ok{color:#1a7f45}.bad{color:#c4302b}
+.dm{padding:0 32px 32px;display:grid;gap:26px}
+.dm h4{font-size:13px;font-weight:600;margin-bottom:10px}
+.dm .sum{background:var(--accent-l);border-radius:12px;padding:14px 16px;color:#4a3800;font-size:13.5px;border-left:3px solid var(--accent)}
+.dm ul{list-style:none;display:grid;gap:8px;color:var(--ink2)}
+.dm ul li{padding-left:16px;position:relative}
+.dm ul li::before{content:"";position:absolute;left:0;top:9px;width:5px;height:5px;border-radius:2px;background:var(--accent)}
+.hist{display:grid;gap:6px;max-width:400px;font-size:12px;color:var(--mute)}
+.hist div{display:grid;grid-template-columns:34px 1fr 36px;gap:10px;align-items:center}
+.hist i{height:6px;border-radius:4px;background:var(--bg);overflow:hidden;display:block}
+.hist i b{display:block;height:100%;background:var(--accent);border-radius:4px}
+.rv{padding:14px 0;border-top:1px solid var(--line)}
+.rv .m{font-size:12px;color:var(--mute);margin-bottom:3px}
+.rv .m strong{color:var(--ink)}
+.rv p{color:var(--ink2);margin-top:2px}
+table.kv{width:100%;border-collapse:collapse;font-size:13px}
+table.kv td{padding:8px 0;border-top:1px solid var(--line);vertical-align:top}
+table.kv td:first-child{color:var(--mute);width:36%;padding-right:12px;text-transform:capitalize}
+details summary{cursor:pointer;color:var(--mute);font-size:13px}
+details pre{margin-top:10px;background:var(--bg);border-radius:10px;padding:12px;overflow:auto;max-height:300px;font:12px/1.5 ui-monospace,Menlo,monospace}
+.acts{display:flex;gap:8px;flex-wrap:wrap}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;z-index:99}
+
+.foot{border-top:1px solid var(--line);background:var(--card);margin-top:40px}
+.foot .row{height:64px;justify-content:space-between;font-size:13px;color:var(--mute)}
+.foot .by strong{color:var(--accent-ink);font-weight:600;background:var(--accent);padding:3px 9px;border-radius:6px;margin-left:4px;box-decoration-break:clone}
+.foot .by{display:flex;align-items:center;gap:2px}
+@media(max-width:720px){.foot .row{flex-direction:column;justify-content:center;gap:4px;height:80px}}
+@media(max-width:1000px){:root{--cols:3}.grid[style]{--cols:3 !important}}
+@media(max-width:720px){
+  .grid[style]{--cols:2 !important}
+  .row{padding:0 14px;gap:10px;flex-wrap:wrap}.top .row{height:auto;padding-top:10px;padding-bottom:10px}
+  .search{order:5;flex-basis:100%;max-width:none}.tabs{order:3;overflow:auto}.sp{display:none}.brand{flex:1}
+  .seg{display:none}
+  main{padding:18px 14px 70px}
+  .dg{grid-template-columns:1fr}.gal{border-right:0;border-bottom:1px solid var(--line);padding:18px}.inf{padding:20px}.dm{padding:0 20px 24px}
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="row">
+    <div class="brand" id="home"><svg viewBox="0 0 34 34" aria-hidden="true"><rect width="34" height="34" rx="9" fill="#ffc400"/><circle cx="15" cy="15" r="7" fill="none" stroke="#111" stroke-width="2.8"/><path d="m20.5 20.5 6.5 6.5" stroke="#111" stroke-width="3.2" stroke-linecap="round"/><path d="M11.5 13.2h7M11.5 16.6h4.5" stroke="#111" stroke-width="2" stroke-linecap="round"/></svg><span>Amazon Scraper<small>Live catalog</small></span></div>
+    <div class="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" placeholder="Search products, or paste an ASIN / link" autocomplete="off" spellcheck="false">
+      <div class="sug" id="sug"></div>
+    </div>
+    <nav class="tabs" id="nav">
+      <button data-v="search" class="on">Search</button>
+      <button data-v="best">Best sellers</button>
+      <button data-v="deals">Deals</button>
+    </nav>
+    <div class="sp"></div>
+    <select class="mkt" id="country" title="Marketplace">
+      <option value="US">US</option><option value="GB">UK</option><option value="DE">DE</option><option value="FR">FR</option>
+      <option value="IN">IN</option><option value="CA">CA</option><option value="IT">IT</option><option value="ES">ES</option>
+    </select>
+  </div>
+</header>
+
+<main id="main"></main>
+<footer class="foot"><div class="row"><div class="by">Created by <strong>Atul Senapati</strong></div><div>Amazon Scraper · runs locally, no API key</div></div></footer>
+<div class="scrim" id="scrim"><div class="dlg" id="dlg"></div></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const SYM = {USD:'$',GBP:'£',EUR:'€',INR:'₹',CAD:'CA$'};
+const money = (p, cur) => p == null ? '' : (SYM[cur] || (cur ? cur + ' ' : '$')) + Number(p).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+const compact = n => n == null ? '' : Intl.NumberFormat('en',{notation:'compact'}).format(n);
+const safeUrl = u => /^https?:\/\//i.test(u || '') ? u : '';
+
+const state = {view:'search', q:'', sort:'relevance', page:1, cat:'electronics', list:'best_sellers', dsort:'featured', cols:4, token:0};
+const CATS = [['electronics','Electronics'],['computers','Computers'],['books','Books'],['videogames','Video games'],['toys-and-games','Toys'],['beauty','Beauty'],['kitchen','Kitchen'],['fashion','Fashion'],['sporting-goods','Sports'],['pet-supplies','Pets']];
+const LISTS = [['best_sellers','Best sellers'],['new_releases','New releases'],['movers_and_shakers','Movers & shakers'],['most_wished_for','Most wished for']];
+const SORTS = [['relevance','Relevance'],['best_sellers','Best sellers'],['reviews','Top rated'],['price_low_to_high','Price: low to high'],['price_high_to_low','Price: high to low'],['newest','Newest']];
+const DSORTS = [['featured','Featured'],['discount','Biggest discount'],['price_low_to_high','Price: low to high'],['price_high_to_low','Price: high to low'],['newest','Newest']];
+
+async function api(path, params) {
+  const p = new URLSearchParams({country: $('#country').value, ...params});
+  const r = await fetch(path + '?' + p);
+  const j = await r.json().catch(() => ({error: 'Unreadable response'}));
+  if (!r.ok) throw new Error(j.error || j.message || JSON.stringify(j));
+  return j;
+}
+function toast(m){const t=document.createElement('div');t.className='toast';t.textContent=m;document.body.append(t);setTimeout(()=>t.remove(),2000)}
+function setCols(n){ state.cols = n; document.documentElement.style.setProperty('--cols', n); document.querySelectorAll('.grid').forEach(g => g.style.setProperty('--cols', n)); document.querySelectorAll('.seg button').forEach(b => b.classList.toggle('on', +b.dataset.c === n)); try { localStorage.setItem('shelf-cols', n); } catch {} }
+
+const skeleton = (n = 12) => `<div class="grid" style="--cols:${state.cols}">${Array.from({length:n}, () => `<div class="cell sk"><div class="im"></div><div class="l"></div><div class="l" style="width:40%"></div></div>`).join('')}</div>`;
+
+function cell(i, rank) {
+  const price = i.price && typeof i.price === 'object' ? i.price : (i.deal ? {amount: i.deal.price, list_price: i.deal.list_price, currency: i.currency} : null);
+  const list = price?.list_price;
+  const off = i.deal?.savings_percent ?? (list && price?.amount ? Math.round((1 - price.amount / list) * 100) : null);
+  let tag = '';
+  if (rank) tag = `<span class="rk">#${esc(rank)}</span>`;
+  else if (i.badges?.is_best_seller) tag = '<span class="tag">Best seller</span>';
+  else if (i.badges?.is_amazons_choice) tag = '<span class="tag dark">Amazon’s Choice</span>';
+  else if (i.deal?.badge) tag = `<span class="tag">${esc(i.deal.badge)}</span>`;
+  const img = i.thumbnail || i.image;
+  const label = price?.amount != null ? money(price.amount, price.currency) : (i.price_text || '');
+  const meta = [i.rating?.average != null ? `<span><b>${i.rating.average}</b> ★ · ${compact(i.rating.count)}</span>` : '', i.bought_past_month_text ? `<span>${esc(i.bought_past_month_text.replace(' in past month', ' / mo'))}</span>` : ''].filter(Boolean).join('');
+  return `<div class="cell" data-asin="${esc(i.asin)}" data-link="${esc(safeUrl(i.link))}">${tag}
+    <div class="im">${img ? `<img loading="lazy" src="${esc(safeUrl(img))}" alt="">` : ''}</div>
+    <div class="bd"><div class="t">${esc(i.title)}</div><div class="meta">${meta}</div>
+      <div class="pr">${label ? `<b>${esc(label)}</b>` : ''}${list ? `<s>${esc(money(list, price.currency))}</s>` : ''}${off ? `<em>−${Math.round(off)}%</em>` : ''}</div></div></div>`;
+}
+const gridOf = (items, ranked) => `<div class="grid" style="--cols:${state.cols}">${items.map(i => cell(i, ranked ? i.rank : null)).join('')}</div>`;
+const pager = j => `<div class="pager"><button class="btn" id="prev" ${j.previous ? '' : 'disabled'}>Previous</button><span>Page ${j.current_page}${j.total_pages ? ' of ' + j.total_pages : ''}</span><button class="btn" id="next" ${j.next ? '' : 'disabled'}>Next</button></div>`;
+const sel = (label, arr, cur, key) => `<label class="ctl">${label}<select class="sel" data-k="${key}">${arr.map(([v,l]) => `<option value="${v}" ${v === cur ? 'selected' : ''}>${l}</option>`).join('')}</select></label>`;
+const seg = () => `<div class="seg" title="Grid size">${[[2,'L'],[4,'M'],[6,'S']].map(([c,l]) => `<button data-c="${c}" class="${state.cols === c ? 'on' : ''}">${l}</button>`).join('')}</div>`;
+const tb = (title, n, ctl) => `<div class="tb"><h2>${title}</h2>${n ? `<span class="n">${n}</span>` : ''}<div class="sp"></div>${ctl}${seg()}</div>`;
+
+async function render() {
+  const my = ++state.token, m = $('#main');
+  document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('on', b.dataset.v === state.view));
+  if (state.view === 'search' && !state.q) {
+    const lg = document.querySelector('.brand svg').outerHTML.replace('<svg','<svg class="lg"');
+    m.innerHTML = `<section class="start">${lg}<h1>Scrape Amazon.<br><mark>Skip the API bill.</mark></h1>
+      <p>Search any product, browse best sellers and deals, and inspect full listings, all pulled live from the scraper on your machine.</p>
+      <form class="big-s" id="bigs"><input id="bq" placeholder="Search a product, ASIN or Amazon link" autocomplete="off"><button class="btn pri" style="height:44px;padding:0 22px">Search</button></form>
+      <div class="chips">${['mechanical keyboard','espresso machine','standing desk','raspberry pi 5','running shoes'].map(s => `<button class="chip" data-try="${s}">${s}</button>`).join('')}</div>
+      <div class="feat">
+        <button data-v="search" data-go="q"><i>⌕</i><b>Product search</b><span>Sort, page and open full details</span></button>
+        <button data-v="best"><i>#</i><b>Best sellers</b><span>Top 100 across 10 categories</span></button>
+        <button data-v="deals"><i>%</i><b>Live deals</b><span>Discounts and lightning deals</span></button>
+      </div></section>`;
+    $('#bigs').onsubmit = e => { e.preventDefault(); submit($('#bq').value); };
+    return;
+  }
+  m.innerHTML = `<div class="tb"><h2>Loading…</h2></div>` + skeleton();
+  try {
+    let html;
+    if (state.view === 'search') {
+      const j = await api('/search', {query: state.q, sort: state.sort, page: state.page});
+      if (my !== state.token) return;
+      html = tb(`Results for “${esc(state.q)}”`, esc(j.results_text ? j.results_text.split(' for ')[0] : ''), sel('Sort by', SORTS, state.sort, 'sort'))
+        + (j.results?.length ? gridOf(j.results) + pager(j) : `<div class="msg"><h3>No results</h3>Try a different search.</div>`);
+    } else if (state.view === 'best') {
+      const j = await api('/best-sellers', {category: state.cat, list_type: state.list, page: state.page});
+      if (my !== state.token) return;
+      html = tb(LISTS.find(l => l[0] === state.list)[1], `Top ${j.count ?? 100}`, sel('List', LISTS, state.list, 'list'))
+        + `<div class="chips">${CATS.map(([v,l]) => `<button class="chip ${v === state.cat ? 'on' : ''}" data-cat="${v}">${l}</button>`).join('')}</div>`
+        + gridOf(j.items || [], true) + pager(j);
+    } else {
+      const j = await api('/deals', {sort: state.dsort, page: state.page});
+      if (my !== state.token) return;
+      html = tb('Today’s deals', '', sel('Sort by', DSORTS, state.dsort, 'dsort')) + gridOf(j.deals || []) + pager(j);
+    }
+    m.innerHTML = html;
+  } catch (e) {
+    if (my !== state.token) return;
+    m.innerHTML = `<div class="msg"><h3>Couldn’t load</h3>${esc(e.message)}<br><button class="btn" id="retry">Try again</button></div>`;
+  }
+}
+
+/* ---------- product dialog ---------- */
+const scrim = $('#scrim'), dlg = $('#dlg');
+function closeDlg() { scrim.classList.remove('on'); document.body.style.overflow = ''; }
+scrim.addEventListener('mousedown', e => { if (e.target === scrim) closeDlg(); });
+async function showProduct(asin, link) {
+  dlg.innerHTML = `<button class="x" onclick="closeDlg()" aria-label="Close">×</button><div class="dg"><div class="gal"><div class="main"><div class="sk" style="width:100%;height:100%"><div class="im" style="width:100%;height:100%"></div></div></div></div><div class="inf"><div class="sk"><div class="l" style="margin:0;height:22px;width:90%"></div></div><div class="sk"><div class="l" style="margin:0;height:22px;width:60%"></div></div></div></div>`;
+  scrim.classList.add('on'); document.body.style.overflow = 'hidden'; scrim.scrollTop = 0;
+  try {
+    const j = await api('/products/details', {product: asin || link});
+    const p = j.price || {}, av = j.availability || {}, imgs = (j.images || []).filter(i => i.link), hist = j.rating?.histogram;
+    const det = Object.entries(j.details || {}).slice(0, 14);
+    const facts = [
+      ['Availability', av.text ? `<span class="${av.is_in_stock ? 'ok' : 'bad'}">${esc(av.text)}</span>` : ''],
+      ['Sold by', esc(j.buybox?.seller?.name || '')],
+      ['Rating', j.rating?.average != null ? `${j.rating.average} / 5 · ${compact(j.rating.count)} ratings` : ''],
+      ['Bought last month', j.bought_past_month ? compact(j.bought_past_month) + '+' : ''],
+      ['Variants', j.variations?.count || ''],
+      ['Delivery', j.delivery?.text ? esc(j.delivery.text.split(' Or ')[0]) : ''],
+      ['ASIN', esc(j.asin)],
+    ].filter(f => f[1]);
+    dlg.innerHTML = `<button class="x" onclick="closeDlg()" aria-label="Close">×</button>
+      <div class="dg">
+        <div class="gal"><div class="main"><img id="mainimg" src="${esc(safeUrl(imgs[0]?.link))}" alt=""></div>
+          <div class="th">${imgs.slice(0, 8).map((i, n) => `<img src="${esc(safeUrl(i.thumbnail || i.link))}" data-big="${esc(safeUrl(i.link))}" class="${n === 0 ? 'on' : ''}" alt="">`).join('')}</div></div>
+        <div class="inf">
+          <div>${j.brand?.name ? `<div class="br">${esc(j.brand.name)}</div>` : ''}<h2>${esc(j.title)}</h2></div>
+          <div class="pr-l"><span class="big">${p.amount != null ? esc(money(p.amount, p.currency)) : '—'}</span>${p.list_price ? `<s>${esc(money(p.list_price, p.currency))}</s>` : ''}${p.savings_percent ? `<em>−${Math.round(p.savings_percent)}%</em>` : ''}</div>
+          <div class="acts"><a class="btn pri" href="${esc(safeUrl(j.link))}" target="_blank" rel="noopener">View on Amazon</a><button class="btn" id="copyjson">Copy JSON</button></div>
+          <div class="facts">${facts.map(([k, v]) => `<div><span>${k}</span><span>${v}</span></div>`).join('')}</div>
+        </div>
+      </div>
+      <div class="dm">
+        ${j.customers_say?.summary ? `<div><h4>What customers say</h4><div class="sum">${esc(j.customers_say.summary)}</div></div>` : ''}
+        ${j.bullets?.length ? `<div><h4>About this item</h4><ul>${j.bullets.slice(0, 6).map(b => `<li>${esc(b)}</li>`).join('')}</ul></div>` : ''}
+        ${hist ? `<div><h4>Rating breakdown</h4><div class="hist">${[5,4,3,2,1].map(n => `<div><span>${n} star</span><i><b style="width:${hist[n + '_star'] || 0}%"></b></i><span>${hist[n + '_star'] || 0}%</span></div>`).join('')}</div></div>` : ''}
+        ${j.top_reviews?.length ? `<div><h4>Top reviews</h4>${j.top_reviews.slice(0, 5).map(r => `<div class="rv"><div class="m"><strong>${r.rating}/5</strong> · ${esc(r.author?.name || '')} · ${esc(r.date || '')}${r.is_verified_purchase ? ' · Verified' : ''}</div><b>${esc(r.title)}</b><p>${esc(r.text)}</p></div>`).join('')}</div>` : ''}
+        ${det.length ? `<div><h4>Specifications</h4><table class="kv">${det.map(([k, v]) => `<tr><td>${esc(k.replace(/_/g, ' '))}</td><td>${esc(typeof v === 'object' ? JSON.stringify(v) : v)}</td></tr>`).join('')}</table></div>` : ''}
+        <details><summary>Raw API response</summary><pre>${esc(JSON.stringify(j, null, 2))}</pre></details>
+      </div>`;
+    dlg.querySelectorAll('.th img').forEach(t => t.onclick = () => { $('#mainimg').src = t.dataset.big; dlg.querySelectorAll('.th img').forEach(x => x.classList.toggle('on', x === t)); });
+    $('#copyjson').onclick = () => navigator.clipboard.writeText(JSON.stringify(j, null, 2)).then(() => toast('JSON copied'));
+  } catch (e) {
+    dlg.innerHTML = `<button class="x" onclick="closeDlg()">×</button><div class="msg"><h3>Couldn’t load product</h3>${esc(e.message)}</div>`;
+  }
+}
+
+/* ---------- search + events ---------- */
+function submit(v) {
+  v = (v ?? $('#q').value).trim(); if (!v) return;
+  $('#sug').classList.remove('on'); $('#q').value = v;
+  if (/^B0[A-Z0-9]{8}$/i.test(v) || /amazon\.[a-z.]+\/.*(dp|gp\/product)\//i.test(v)) return showProduct(/^B0/i.test(v) ? v.toUpperCase() : '', v);
+  state.view = 'search'; state.q = v; state.page = 1; render();
+}
+let st, hl = -1;
+$('#q').addEventListener('input', () => {
+  clearTimeout(st); const v = $('#q').value.trim();
+  if (v.length < 2) return $('#sug').classList.remove('on');
+  st = setTimeout(async () => {
+    try {
+      const j = await api('/search/autocomplete', {query: v}); hl = -1;
+      const s = (j.suggestions || []).slice(0, 8);
+      $('#sug').innerHTML = s.map(x => `<div data-v="${esc(x.value)}">${esc(x.value)}</div>`).join('');
+      $('#sug').classList.toggle('on', s.length > 0);
+    } catch {}
+  }, 200);
+});
+$('#q').addEventListener('keydown', e => {
+  const items = [...document.querySelectorAll('#sug div')];
+  if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && items.length) {
+    e.preventDefault(); hl = (hl + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+    items.forEach((x, i) => x.classList.toggle('hl', i === hl)); $('#q').value = items[hl].dataset.v;
+  } else if (e.key === 'Enter') submit();
+  else if (e.key === 'Escape') $('#sug').classList.remove('on');
+});
+$('#sug').onclick = e => { const d = e.target.closest('[data-v]'); if (d) submit(d.dataset.v); };
+addEventListener('keydown', e => { if (e.key === 'Escape') closeDlg(); if (e.key === '/' && document.activeElement.tagName !== 'INPUT') { e.preventDefault(); $('#q').focus(); } });
+document.addEventListener('click', e => {
+  const t = e.target;
+  if (!t.closest('.search')) $('#sug').classList.remove('on');
+  const c = t.closest('.cell[data-asin]'); if (c) return showProduct(c.dataset.asin, c.dataset.link);
+  const f = t.closest('.feat button'); if (f) { if (f.dataset.go) return $('#bq').focus(); state.view = f.dataset.v; state.page = 1; return render(); }
+  if (t.dataset.try) return submit(t.dataset.try);
+  if (t.dataset.cat) { state.cat = t.dataset.cat; state.page = 1; return render(); }
+  if (t.dataset.c) return setCols(+t.dataset.c);
+  if (t.id === 'prev' || t.id === 'next') { state.page += t.id === 'next' ? 1 : -1; scrollTo({top: 0}); return render(); }
+  if (t.id === 'retry') return render();
+});
+document.addEventListener('change', e => { const k = e.target.dataset.k; if (k) { state[k] = e.target.value; state.page = 1; render(); } });
+$('#nav').onclick = e => { const v = e.target.dataset.v; if (v) { state.view = v; state.page = 1; if (v === 'search' && !state.q) $('#q').focus(); render(); } };
+$('#home').onclick = () => { state.view = 'search'; state.q = ''; $('#q').value = ''; render(); };
+$('#country').onchange = () => { state.page = 1; render(); };
+try { const c = +localStorage.getItem('shelf-cols'); if ([2,4,6].includes(c)) state.cols = c; } catch {}
+setCols(state.cols);
+render();
+</script>
+</body>
+</html>

@@ -13,4 +13,4 @@ COPY . /app
 EXPOSE 8000
 
 # No browser needed — the scraper talks to Amazon over plain HTTP.
-CMD ["python", "run.py"]
+CMD ["python", "serve.py"]
