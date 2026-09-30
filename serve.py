@@ -7,6 +7,13 @@ import config
 import routes  # noqa: F401
 
 
+@bottle.hook("before_request")
+def _root_to_frontend():
+    # the site root opens the UI; /health still returns the API status
+    if bottle.request.path == "/":
+        redirect("/app/")
+
+
 @bottle.route("/app")
 def _app_redirect():
     redirect("/app/")
