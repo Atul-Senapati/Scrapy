@@ -1,21 +1,28 @@
-# Security Policy for the Amazon Scraper Project
+# Security Policy
 
-## Disclaimer
+## Reporting a vulnerability
 
-By using Amazon Scraper, you agree to comply with all applicable local and international laws related to data scraping, copyright, and privacy. The developers of Amazon Scraper will not be held liable for any misuse of this software. It is the user's sole responsibility to ensure adherence to all relevant laws regarding data scraping, copyright, and privacy, and to use Amazon Scraper in an ethical and legal manner, in line with both local and international regulations.
+If you find a security issue in this project, please report it privately rather than opening a public issue.
 
-## 1. Reporting a Vulnerability
+Use GitHub's private reporting: open the repository's **Security** tab and choose **Report a vulnerability**
+(https://github.com/Atul-Senapati/Scrapy/security/advisories/new).
 
-We take the privacy and security of the Amazon Scraper Project very seriously. If you have discovered a security vulnerability or have concerns about the project, we appreciate your assistance in responsibly disclosing it to us.
+Please include what you found, the steps to reproduce it, and the impact you expect. You can expect an initial reply within a few days.
 
-To report a security issue or express a concern, please email Chetan Jain at [chetan@omkar.cloud](mailto:chetan@omkar.cloud). We will promptly respond to your concerns.
+## Scope
 
-## 2. Use at Your Own Risk
+- The web UI in `frontend/` and the server in `serve.py`
+- The deployment files (`Dockerfile`, `render.yaml`)
+- The bundled scraper code, which comes from [omkarcloud/amazon-scraper](https://github.com/omkarcloud/amazon-scraper)
 
-This project is provided for ethical and legal purposes only. It must be used in compliance with all relevant local and international laws and is not intended for unauthorized or illegal use.
+## Deployment notes
 
-## 3. Contact
+- The hosted demo has no login. Anyone with the link can use it. Add authentication before exposing it beyond a demo.
+- If you set `AMAZON_PROXY`, keep the credentials in an environment variable and never commit them.
+- Do not commit `.env` files or API keys.
 
-For questions regarding this security policy or the security of the Amazon Scraper Project, please contact [chetan@omkar.cloud](mailto:chetan@omkar.cloud).
+## Responsible use
 
-The information in this `SECURITY.md` is provided "as is," without any kind of warranty.
+Scraping Amazon may be restricted by its terms of service and by local law on data scraping, copyright and privacy. You are responsible for using this software lawfully and ethically. The authors are not liable for misuse.
+
+The software is provided "as is", without warranty of any kind, as described in the [MIT License](LICENSE).
